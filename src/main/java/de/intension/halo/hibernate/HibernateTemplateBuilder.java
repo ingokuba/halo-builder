@@ -17,17 +17,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import javax.persistence.Id;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-
+import de.intension.halo.AnnotationTransformer;
 import de.intension.halo.entity.DataType;
 import de.intension.halo.entity.Link;
 import de.intension.halo.entity.Property;
 import de.intension.halo.entity.Template;
+import de.intension.halo.entity.Validation;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.java.Log;
@@ -37,7 +33,6 @@ import lombok.extern.java.Log;
  */
 @Log
 @Accessors(chain = true)
-@RequiredArgsConstructor
 public class HibernateTemplateBuilder
 {
 
@@ -48,7 +43,7 @@ public class HibernateTemplateBuilder
      */
     @Setter
     @NonNull
-    private String                            templateName;
+    private String                                            templateName;
     /**
      * Mappings of property identifier to multi-language mapping.
      * <br/>
@@ -59,35 +54,55 @@ public class HibernateTemplateBuilder
      * @param locales Set mappings of property identifier to multi-language mapping.
      */
     @Setter
-    private Map<String, Map<String, String>>  locales;
-    private Map<String, Link>                 nestedLinks;
-    private List<Class<? extends Annotation>> readOnlyAnnotations  = Arrays.asList(Id.class);
-    private List<Class<? extends Annotation>> requiredAnnotations  = Arrays.asList(NotNull.class, NotEmpty.class);
-    private List<Class<? extends Annotation>> transientAnnotations = Arrays.asList(Transient.class);
+    private Map<String, Map<String, String>>                  locales;
+    /**
+     * List of annotation transformers.
+     * 
+     * @param transformers Override list of annotation transformers.
+     */
+    @Setter
+    private List<AnnotationTransformer<? extends Annotation>> transformers;
+    private Map<String, Link>                                 nestedLinks;
+    private List<Class<? extends Annotation>>                 transientAnnotations = Arrays.asList(Transient.class);
 
     /**
-     * Set annotations that define weither a property is write protected.
+     * Initialize a new template builder.
+     * <br/>
+     * <br/>
+     * By default the following annotation transformers are added.
+     * This behaviour can be overriden with {@link #setTransformers(List)}.
+     * <ul>
+     * <li>{@link RegexValidationMapper}
+     * <li>{@link LengthValidationMapper}
+     * <li>{@link RangeValidationMapper}
+     * <li>{@link IdTransformer}
+     * <li>{@link NotNullTransformer}
+     * <li>{@link NotEmptyTransformer}
+     * </ul>
      * 
-     * @param annotations Set annotations that define write protection.
-     * @return Annotations that define write protection.
+     * @param templateName Name of the template to build.
      */
-    @SafeVarargs
-    public final HibernateTemplateBuilder setReadOnlyAnnotations(Class<? extends Annotation>... annotations)
+    public HibernateTemplateBuilder(@NonNull String templateName)
     {
-        this.readOnlyAnnotations = Arrays.asList(annotations);
-        return this;
+        this.templateName = templateName;
+        addTransformers(new RegexValidationMapper(), new LengthValidationMapper(), new RangeValidationMapper(),
+                        new IdTransformer(), new NotNullTransformer(), new NotEmptyTransformer());
     }
 
     /**
-     * Set annotations that define weither a property is required.
+     * Add an annotation transformer to match for a certain annotation.
      * 
-     * @param annotations Set annotations that define weither a property is required.
-     * @return Annotations that define weither a property is required.
+     * @param transformer Transformer to change property.
      */
     @SafeVarargs
-    public final HibernateTemplateBuilder setRequiredAnnotations(Class<? extends Annotation>... annotations)
+    public final HibernateTemplateBuilder addTransformers(AnnotationTransformer<? extends Annotation>... transformers)
     {
-        this.requiredAnnotations = Arrays.asList(annotations);
+        if (this.transformers == null) {
+            this.transformers = new ArrayList<>();
+        }
+        for (AnnotationTransformer<?> transformer : transformers) {
+            this.transformers.add(transformer);
+        }
         return this;
     }
 
@@ -175,6 +190,7 @@ public class HibernateTemplateBuilder
         return properties;
     }
 
+    @SuppressWarnings("unchecked")
     private Property buildProperty(Class<?> entityType, Field field)
     {
         Property property = new Property(field.getName());
@@ -184,15 +200,10 @@ public class HibernateTemplateBuilder
         setDataType(property, field.getGenericType());
         for (Annotation annotation : field.getAnnotations()) {
             Class<? extends Annotation> annotationType = annotation.annotationType();
-            if (Pattern.class.equals(annotationType)) {
-                Pattern patternAnnotation = (Pattern)annotation;
-                property.setRegex(patternAnnotation.regexp());
-            }
-            if (checkAnnotation(annotationType, requiredAnnotations)) {
-                property.setRequired(true);
-            }
-            if (checkAnnotation(annotationType, readOnlyAnnotations)) {
-                property.setReadOnly(true);
+            for (AnnotationTransformer<?> transformer : transformers) {
+                if (transformer.matchesAnnotation(annotationType)) {
+                    ((AnnotationTransformer<Annotation>)transformer).transformProperty(annotation, property, locales);
+                }
             }
         }
         return property;
@@ -222,7 +233,7 @@ public class HibernateTemplateBuilder
         }
         if (type.equals(LocalDateTime.class)) {
             property.setType(DataType.DATE);
-            property.setRegex("yyyy-MM-dd'T'HH:mm:ss.SSS");
+            property.addValidation(new Validation("format", "yyyy-MM-dd'T'HH:mm:ss.SSS"));
             return;
         }
         property.setType(DataType.OBJECT);
@@ -236,16 +247,6 @@ public class HibernateTemplateBuilder
     {
         for (Annotation annotation : field.getAnnotations()) {
             if (transientAnnotations.contains(annotation.annotationType())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean checkAnnotation(Class<? extends Annotation> annotation, List<Class<? extends Annotation>> allowed)
-    {
-        for (Class<? extends Annotation> a : allowed) {
-            if (a.equals(annotation)) {
                 return true;
             }
         }
