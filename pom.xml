@@ -10,6 +10,7 @@
   <description>Java builder for the HATEOAS standard HALO</description>
 
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <!-- Versions for JUnit 5 -->
@@ -47,7 +48,7 @@
       <version>2.2</version>
     </dependency>
     <dependency>
-      <groupId>org.hibernate</groupId>
+      <groupId>org.hibernate.validator</groupId>
       <artifactId>hibernate-validator</artifactId>
       <version>6.1.5.Final</version>
     </dependency>
