@@ -1,5 +1,6 @@
 package de.intension.halo.entity;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,25 +44,12 @@ public class Property
      */
     private Map<String, String> title;
     /**
-     * Regular expression that restricts the {@link #value} of this property.
-     * <br/>
-     * <br/>
-     * In case of {@link #type} {@link DataType#DATE} this should contain the date format.
+     * List of validations to restrict the property value.
      * 
-     * @param regex Set restriction to property value.
-     * @return Restriction in form of a regular expression.
+     * @param validations Set restrictions for this property.
+     * @return Restrictions of the property value.
      */
-    private String              regex;
-    /**
-     * Defines weither this property is required on the object.
-     * <br/>
-     * <br/>
-     * A value of <b>null</b> should be interpreted as <b>false</b>.
-     * 
-     * @param required Set weither this property is required.
-     * @return <b>true</b> | <b>false</b> | <b>null</b>.
-     */
-    private Boolean             required;
+    private List<Validation>    validations;
     /**
      * Defines weither this property is write protected.
      * <br/>
@@ -132,6 +120,20 @@ public class Property
             title = new HashMap<>();
         }
         title.put(locale, value);
+        return this;
+    }
+
+    /**
+     * Add validation to restrict the property value.
+     * 
+     * @param validation Validation object.
+     */
+    public Property addValidation(Validation validation)
+    {
+        if (validations == null) {
+            validations = new ArrayList<>();
+        }
+        validations.add(validation);
         return this;
     }
 }

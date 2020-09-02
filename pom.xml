@@ -4,7 +4,7 @@
 
   <groupId>de.intension</groupId>
   <artifactId>halo-builder</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
 
   <name>HALO Builder</name>
   <description>Java builder for the HATEOAS standard HALO</description>
@@ -12,6 +12,9 @@
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <!-- Versions for JUnit 5 -->
+    <org.junit.jupiter-version>5.4.2</org.junit.jupiter-version>
+    <org.junit.platform-version>1.4.2</org.junit.platform-version>
   </properties>
 
   <distributionManagement>
@@ -47,6 +50,38 @@
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-validator</artifactId>
       <version>6.1.5.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${org.junit.jupiter-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- engine for surefire and failsafe -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${org.junit.jupiter-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- Needed for platform launching -->
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <version>${org.junit.platform-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <version>${org.junit.platform-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <version>2.1</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
